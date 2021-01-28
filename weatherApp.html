@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        #main, #weather-div{
+            text-align: center;
+        }
+        .cover-spin {
+            position: fixed;
+            width: 100%;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 9999;
+            display: none;
+        }
+        @-webkit-keyframes spin {
+            from {
+                -webkit-transform: rotate(0deg);
+            }
+            to {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .cover-spin::after {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 48%;
+            top: 40%;
+            width: 40px;
+            height: 40px;
+            border-style: solid;
+            border-color: black;
+            border-top-color: transparent;
+            border-width: 4px;
+            border-radius: 50%;
+            -webkit-animation: spin 0.8s linear infinite;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="cover-spin"></div>
+    <div id="main">
+        <h1>Get Weather Details</h1>
+        Get Weather Details <br> By City Name: <input type="radio" name="main-selection" id="city-radio">
+        <b>/</b> By Latitude & Longitute: <input type="radio" name="main-selection" id="lat-lang-radio">
+        <br>
+        <br>
+        <input id="city-in" type="text" name="city" placeholder="Enter City Name" style="display: none;">
+        <input id="lat-in" type="text" name="lat" placeholder="Enter Latitude" style="display: none;">
+        <input id="lang-in" type="text" name="lang" placeholder="Enter Longitude" style="display: none;">
+        <button id="final-submit" style="display: none;">Submit</button>
+    </div>
+    <div id="weather-div"></div>
+    <script>
+        $(document).ready(() => {
+            $("#city-radio").change(() => {
+                if($(this).prop("checked", true)){
+                    $("#city-in").show();
+                    $("#final-submit").show();
+                    $("#lat-in").hide();
+                    $("#lang-in").hide();
+                }
+            });
+            $("#lat-lang-radio").change(() => {
+                if($(this).prop("checked", true)){
+                    $("#city-in").hide();
+                    $("#final-submit").show();
+                    $("#lat-in").show();
+                    $("#lang-in").show();
+                }
+            });
+            $("#final-submit").click(() => {
+                $(".cover-spin").show();
+                var cityRadio = $("#city-radio").prop("checked");
+                var mainSelection = (cityRadio) ? 'city' : 'latLang';
+                var cityName = $("#city-in").val();
+                var lat = $("#lat-in").val();
+                var lang = $("#lang-in").val();
+                $.ajax({
+                    type: 'POST',
+                    url: '/getWeather',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        "mainSelection": mainSelection,
+                        "cityName": cityName,
+                        "latitude": lat,
+                        "longitude": lang
+                    }),
+                    dataType: 'json',
+                    success: (response) => {
+                        $(".cover-spin").hide();
+                        console.log("SUCCESS:");
+                        console.log(response);
+                        var divChilds = $("#weather-div").children().length;
+                        if(divChilds != 0){
+                            $("#weather-div").empty();
+                        }
+                        $("#weather-div").append('<h3>Weather Details For ' + response.city + ' City</h3>');
+                        $("#weather-div").append('<p>The Temperature is ' + response.temp + ' &#8451; and It Feels like ' + response.desc + '</p>');
+                        $("#weather-div").append('<img src="https://www.weatherbit.io/static/img/icons/' + response.icon + '.png">')
+                    },
+                    error: (error) => {
+                        $(".cover-spin").hide();
+                        console.log("ERROR:");
+                        console.log(error);
+                        $("#weather-div").empty();
+                        (mainSelection == "city") ? alert("Sorry !!!\nThe given city name not found.") : alert("Sorry !!!\nThe latitude and longitude not found.");
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
